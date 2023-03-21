@@ -1,19 +1,38 @@
 import { Injectable } from '@nestjs/common';
 import { bcApi } from './bc-api';
+import { isWeekendAndweekendDay } from './helpers';
 
 @Injectable()
 export class BcApiService {
-  async getQuotation(date: string) {
-    const dayDate = date.slice(0, 2);
-    const monthDate = date.slice(3, 5);
-    const yearDate = date.slice(6, 10);
+  async getQuotation(dateString: string) {
+    const quotationDate = new Date(dateString);
+    const weekendDay = isWeekendAndweekendDay(quotationDate);
 
-    const dateFormatted = `${monthDate}/${dayDate}/${yearDate}`;
+    let dayDate;
+    dayDate = quotationDate.getDate();
+
+    if (weekendDay.isWeekend) {
+      dayDate =
+        quotationDate.getDate() -
+        (weekendDay.weekendDay === 'Saturday' ? 1 : 2);
+    }
+
+    const dayDateFormatedd = dayDate >= 10 ? dayDate : `0${dayDate}`;
+
+    const monthDate = quotationDate.getMonth() + 1;
+    const monthDateFormatedd = monthDate >= 10 ? monthDate : `0${monthDate}`;
+
+    const yearDate = quotationDate.getFullYear();
+
+    const dateFormatted = `${monthDateFormatedd}/${dayDateFormatedd}/${yearDate}`;
 
     const value = await bcApi.get(
       `CotacaoDolarDia(dataCotacao=@dataCotacao)?@dataCotacao='${dateFormatted}'&$top=100&$format=json`,
     );
 
-    return value.data.value[0];
+    return {
+      ...value.data.value[0],
+      dateQuotation: dateFormatted,
+    };
   }
 }
