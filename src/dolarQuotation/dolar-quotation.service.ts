@@ -27,8 +27,6 @@ export class DolarQuotationService {
     if (!initialQuotationFromDB) {
       const quotationFromBcApi = await this.bcApiService.getQuotation(date);
 
-      console.log(quotationFromBcApi, '<- quotationFromBcApi');
-
       if (!quotationFromBcApi) {
         const lastQuotation = await this.prisma.dolarQuotation.findFirst({
           where: {
@@ -53,7 +51,6 @@ export class DolarQuotationService {
         },
       });
 
-      console.log('From Api');
       return {
         ...quotationSavedOnDB,
         approximateQuotation:
@@ -62,7 +59,6 @@ export class DolarQuotationService {
             : false,
       };
     }
-    console.log('From DB');
     return {
       ...initialQuotationFromDB,
       approximateQuotation:
