@@ -15,6 +15,7 @@ export class DolarQuotationService {
     args: GetDolarQuotationArgs,
   ): Promise<DolarQuotationModel> {
     const { date } = args;
+
     const initialQuotationFromDB = await this.prisma.dolarQuotation.findFirst({
       where: {
         dateQuotation: {
@@ -25,6 +26,8 @@ export class DolarQuotationService {
 
     if (!initialQuotationFromDB) {
       const quotationFromBcApi = await this.bcApiService.getQuotation(date);
+
+      console.log(quotationFromBcApi, '<- quotationFromBcApi');
 
       if (!quotationFromBcApi) {
         const lastQuotation = await this.prisma.dolarQuotation.findFirst({
@@ -43,7 +46,7 @@ export class DolarQuotationService {
 
       const quotationSavedOnDB = await this.prisma.dolarQuotation.create({
         data: {
-          dateQuotation: date,
+          dateQuotation: quotationFromBcApi.dateQuotation,
           id: randomUUID(),
           valueForBuy: String(quotationFromBcApi.cotacaoCompra),
           valueForSell: String(quotationFromBcApi.cotacaoVenda),
@@ -51,9 +54,21 @@ export class DolarQuotationService {
       });
 
       console.log('From Api');
-      return quotationSavedOnDB;
+      return {
+        ...quotationSavedOnDB,
+        approximateQuotation:
+          new Date(date) !== new Date(quotationFromBcApi.dateQuotation)
+            ? true
+            : false,
+      };
     }
     console.log('From DB');
-    return initialQuotationFromDB;
+    return {
+      ...initialQuotationFromDB,
+      approximateQuotation:
+        new Date(date) !== new Date(initialQuotationFromDB.dateQuotation)
+          ? false
+          : true,
+    };
   }
 }
